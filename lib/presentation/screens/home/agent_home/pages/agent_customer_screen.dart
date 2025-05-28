@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crm_application/app_constants.dart' show AppConstants;
 import 'package:crm_application/presentation/screens/chat/chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,8 @@ import 'package:iconify_flutter/icons/tabler.dart';
 import 'package:iconify_flutter/icons/ic.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
 
 class AgentCustomerScreen extends StatefulWidget {
   const AgentCustomerScreen({super.key});
@@ -15,15 +19,64 @@ class AgentCustomerScreen extends StatefulWidget {
   State<AgentCustomerScreen> createState() => _AgentCustomerScreenState();
 }
 
-class _AgentCustomerScreenState extends State<AgentCustomerScreen>
-    with TickerProviderStateMixin {
-  late final TabController _tabController;
+class _AgentCustomerScreenState extends State<AgentCustomerScreen> {
+  late final User me;
   final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    me = FirebaseAuth.instance.currentUser!;
+
+    ZegoUIKitPrebuiltCallInvitationService().init(
+      appID: AppConstants.APP_ID,
+      appSign: AppConstants.APP_SIGN,
+      userID: me.uid,
+      userName: me.email ?? 'User',
+      plugins: [ZegoUIKitSignalingPlugin()],
+    );
+  }
+
+  @override
+  void dispose() {
+    ZegoUIKitPrebuiltCallInvitationService().uninit();
+    super.dispose();
+  }
+
+  // Log call details to Firestore
+  Future<void> _logCall(String peerId, String peerName, String callType, String status) async {
+    try {
+      await FirebaseFirestore.instance.collection('call_logs').add({
+        'callerId': callType == 'outgoing' ? currentUserId : peerId,
+        'callerName': callType == 'outgoing' ? (me.displayName ?? me.email ?? 'Me') : peerName,
+        'receiverId': callType == 'outgoing' ? peerId : currentUserId,
+        'receiverName': callType == 'outgoing' ? peerName : (me.displayName ?? me.email ?? 'Me'),
+        'callType': callType, // 'incoming' or 'outgoing'
+        'status': status, // 'accepted', 'declined', 'timeout'
+        'timestamp': FieldValue.serverTimestamp(),
+        'duration': status == 'accepted' ? 0 : null, // You can update this later
+        'agentId': currentUserId, // To filter calls for specific agent
+      });
+    } catch (e) {
+      print('Error logging call: $e');
+    }
+  }
+
+  void _inviteCall(String peerUid, String peerName) {
+    // Log the outgoing call attempt immediately
+    _logCall(peerUid, peerName, 'outgoing', 'initiated');
+
+    ZegoUIKitPrebuiltCallInvitationService().send(
+      invitees: [ZegoCallUser(peerUid, peerName)],
+      isVideoCall: false,
+      timeoutSeconds: 60,
+      customData: jsonEncode({
+        'audioConfig': {
+          'enableSpeaker': true,
+          'enableMicrophone': true,
+        }
+      }),
+    );
   }
 
   @override
@@ -33,28 +86,8 @@ class _AgentCustomerScreenState extends State<AgentCustomerScreen>
       body: Column(
         children: [
           _buildHeader(),
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.indigo,
-              labelColor: Colors.indigo,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              tabs: const [
-                Tab(text: 'Customers'),
-                Tab(text: 'Call Logs'),
-              ],
-            ),
-          ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildCustomerTab(),
-                _buildCallLogsTab(),
-              ],
-            ),
+            child: _buildCustomerList(),
           ),
         ],
       ),
@@ -92,7 +125,7 @@ class _AgentCustomerScreenState extends State<AgentCustomerScreen>
     );
   }
 
-  Widget _buildCustomerTab() {
+  Widget _buildCustomerList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -101,21 +134,25 @@ class _AgentCustomerScreenState extends State<AgentCustomerScreen>
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Image(
+              image: AssetImage('assets/users_loader.gif'),
+              height: 200,
+              width: 200,
+            ),
+          );
         }
 
         final customers = snapshot.data!.docs;
 
         if (customers.isEmpty) {
-          return  const Center(
-              child: Image(
-                image: AssetImage(
-                    'assets/users_loader.gif'
-                ),
-                height: 200,
-                width: 200,
-              )
-          );;
+          return const Center(
+            child: Image(
+              image: AssetImage('assets/users_loader.gif'),
+              height: 200,
+              width: 200,
+            ),
+          );
         }
 
         return ListView.builder(
@@ -189,19 +226,18 @@ class _AgentCustomerScreenState extends State<AgentCustomerScreen>
                                 icon: Iconify(Ic.outline_phone_android,
                                     color: Colors.indigo.shade200),
                                 onPressed: () {
-                                  // Future feature: Call via Agora
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      shape: BeveledRectangleBorder(),
-                                      backgroundColor: Colors.indigo.shade300,
-                                      content: Text(
-                                        'There is no call functionality for the customer because they are mocked Data in firebase',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          color: Colors.white
+                                      SnackBar(
+                                        shape: BeveledRectangleBorder(),
+                                        backgroundColor: Colors.indigo.shade300,
+                                        content: Text(
+                                          'There is no call functionality for the customer because they are mocked Data in firebase',
+                                          style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              color: Colors.white
+                                          ),
                                         ),
-                                      ),
-                                    )
+                                      )
                                   );
                                 },
                               ),
@@ -240,15 +276,6 @@ class _AgentCustomerScreenState extends State<AgentCustomerScreen>
           },
         );
       },
-    );
-  }
-
-  Widget _buildCallLogsTab() {
-    return Center(
-      child: Text(
-        'Call Logs (Coming Soon)',
-        style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey.shade700),
-      ),
     );
   }
 }
