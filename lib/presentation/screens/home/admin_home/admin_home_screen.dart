@@ -8,10 +8,9 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/material_symbols.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:iconify_flutter/icons/bi.dart';
-
-import 'pages/dashboard_screen.dart';
-import 'pages/search_screen.dart';
-import 'pages/settings_screen.dart';
+import 'pages/admin_dashboard_screen.dart';
+import 'pages/admin_search_screen.dart';
+import 'pages/admin_settings_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});

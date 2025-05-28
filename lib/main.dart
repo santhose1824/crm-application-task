@@ -10,14 +10,13 @@ import 'package:crm_application/presentation/screens/home/agent_home/agent_home_
 import 'package:crm_application/presentation/screens/login/login_screen.dart';
 import 'package:crm_application/presentation/screens/onboard/onboard_screen.dart';
 import 'package:crm_application/presentation/screens/splash/splash_screen.dart';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
-
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
 import 'bloc/agent/agent_bloc.dart';
 import 'bloc/agent/agent_event.dart';
 import 'bloc/chat/chat_bloc.dart';
@@ -25,16 +24,22 @@ import 'data/repository/agent_repository.dart';
 import 'data/repository/auth_repository.dart';
 import 'data/repository/chat_repository.dart';
 
-void main() async {
+final navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 🔧 Firebase Initialization
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+  ZegoUIKitPrebuiltCallInvitationService().setNavigatorKey(navigatorKey);
+  ZegoUIKitPrebuiltCallInvitationService()
+      .useSystemCallingUI([ZegoUIKitSignalingPlugin()]);
+  runApp(MyApp(navigatorKey: navigatorKey));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.navigatorKey});
+  final GlobalKey<NavigatorState> navigatorKey;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -64,6 +69,7 @@ class _MyAppState extends State<MyApp> {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'TaskZen CRM',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

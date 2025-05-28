@@ -15,12 +15,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- For showing call notifications when app is killed -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- For system overlay (if needed for call UI) -->
     <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW" />
 
     <application
-        android:label="your_app_name"
+        android:label="crm_application"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -41,12 +40,6 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-
-            <!-- For handling call notifications -->
-            <intent-filter>
-                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
         </activity>
 
         <!-- Firebase Messaging Service -->
@@ -57,44 +50,6 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-        <!-- Background service for call notifications -->
-        <service
-            android:name="me.carda.awesome_notifications.services.ForegroundService"
-            android:enabled="true"
-            android:exported="false"
-            android:stopWithTask="false"
-            android:foregroundServiceType="phoneCall" />
-
-        <!-- Awesome Notifications receivers -->
-        <receiver
-            android:name="me.carda.awesome_notifications.core.receivers.NotificationReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name="me.carda.awesome_notifications.core.receivers.DismissedReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name="me.carda.awesome_notifications.core.receivers.ScheduledReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name="me.carda.awesome_notifications.core.receivers.RefreshReceiver"
-            android:exported="false" />
-
-        <!-- Boot receiver to restart notifications -->
-        <receiver
-            android:name="me.carda.awesome_notifications.core.receivers.BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter android:priority="1000">
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -1,0 +1,8 @@
+-keep class com.itgsa.opensdk.** { *; }
+-keep class com.fasterxml.jackson.databind.** { *; }
+-keep class java.beans.** { *; }
+-keep class org.w3c.dom.** { *; }
+-dontwarn com.itgsa.opensdk.**
+-dontwarn com.fasterxml.jackson.databind.**
+-dontwarn java.beans.**
+-dontwarn org.w3c.dom.**

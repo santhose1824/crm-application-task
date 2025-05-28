@@ -49,9 +49,18 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacementNamed(context, '/agent_home');
           }
         } else if (state is AuthFailure) {
-          print(state.error);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error)),
+              SnackBar(
+                shape: BeveledRectangleBorder(),
+                backgroundColor: Colors.indigo.shade300,
+                content: Text(
+                  state.error,
+                  style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: Colors.white
+                  ),
+                ),
+              )
           );
         }
       },

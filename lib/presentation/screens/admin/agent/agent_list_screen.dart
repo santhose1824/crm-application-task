@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crm_application/app_constants.dart';
 import 'package:crm_application/presentation/screens/chat/chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/icons/ic.dart';
 import 'package:iconify_flutter/icons/tabler.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
 import '../../../../bloc/agent/agent_bloc.dart';
 import '../../../../bloc/agent/agent_event.dart';
 import '../../../../bloc/agent/agent_state.dart';
@@ -13,8 +18,46 @@ import 'add_agent_screen.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/material_symbols.dart';
 
-class AgentListScreen extends StatelessWidget {
+class AgentListScreen extends StatefulWidget {
   const AgentListScreen({super.key});
+
+  @override
+  State<AgentListScreen> createState() => _AgentListScreenState();
+}
+
+class _AgentListScreenState extends State<AgentListScreen> {
+  late final User me;
+  @override
+  void initState() {
+    super.initState();
+    me = FirebaseAuth.instance.currentUser!;
+
+    ZegoUIKitPrebuiltCallInvitationService().init(
+      appID: AppConstants.APP_ID,
+      appSign: AppConstants.APP_SIGN,
+      userID: me.uid,
+      userName: me.email ?? 'User',
+      plugins: [ZegoUIKitSignalingPlugin()],
+    );
+  }
+  @override
+  void dispose() {
+    ZegoUIKitPrebuiltCallInvitationService().uninit();
+    super.dispose();
+  }
+  void _inviteCall(String peerUid, String peerName) {
+    ZegoUIKitPrebuiltCallInvitationService().send(
+      invitees: [ZegoCallUser(peerUid, peerName)],
+      isVideoCall: false,
+      timeoutSeconds: 60,
+      customData: jsonEncode({
+        'audioConfig': {
+          'enableSpeaker': true,
+          'enableMicrophone': true,
+        }
+      }),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,19 +222,7 @@ class AgentListScreen extends StatelessWidget {
                                             icon: Iconify(Ic.outline_phone_android,color: Colors.indigo.shade200,) ,
                                             onPressed: () {
                                               // Initiate call to this agent
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    shape: BeveledRectangleBorder(),
-                                                    backgroundColor: Colors.indigo.shade300,
-                                                    content: Text(
-                                                      'There is no call functionality for the customer because they are mocked Data in firebase',
-                                                      style: GoogleFonts.poppins(
-                                                          fontSize: 16,
-                                                          color: Colors.white
-                                                      ),
-                                                    ),
-                                                  )
-                                              );
+                                              _inviteCall(agent.uid, agent.name);
                                             },
                                           ),
                                           IconButton(

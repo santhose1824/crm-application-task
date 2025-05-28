@@ -121,7 +121,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
                     return _buildSearchResults(results);
                   }
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                      child: Image(
+                        image: AssetImage(
+                            'assets/users_loader.gif'
+                        ),
+                        height: 200,
+                        width: 200,
+                      )
+                  );
                 },
               )
                   : BlocBuilder<CustomerBloc, CustomerState>(
@@ -139,7 +147,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
                     return _buildSearchResults(results);
                   }
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                      child: Image(
+                        image: AssetImage(
+                            'assets/users_loader.gif'
+                        ),
+                        height: 200,
+                        width: 200,
+                      )
+                  );
                 },
               ),
             ),
